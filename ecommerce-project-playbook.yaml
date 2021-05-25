@@ -1,5 +1,5 @@
 - name: 'KodeKloud E-Com Project'
-  hosts: centos
+  hosts: centos7
   tasks:
   - name: "Install Firewall"
     yum:
