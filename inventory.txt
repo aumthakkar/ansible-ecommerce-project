@@ -1,1 +1,8 @@
-target3 ansible_host=192.168.1.107 ansible_connection=ssh ansible_user=root ansible_ssh_pass=abc123
+target1 ansible_host=192.168.1.115 ansible_connection=ssh ansible_user=root ansible_ssh_pass=abc123
+target2 ansible_host=192.168.1.116 ansible_connection=ssh ansible_user=root ansible_ssh_pass=abc123
+target3 ansible_host=192.168.1.117 ansible_connection=ssh ansible_user=root ansible_ssh_pass=abc123
+
+[centos7]
+target1
+target2
+target3
