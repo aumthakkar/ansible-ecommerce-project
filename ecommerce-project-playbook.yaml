@@ -1,0 +1,114 @@
+- name: 'KodeKloud E-Com Project'
+  hosts: target3
+  tasks:
+  - name: "Install Firewall"
+    yum:
+      name: firewalld
+      state: present
+  - name: "Start the Firewall Daemon"
+    command: systemctl start firewalld
+
+  - name: "Ensure Firewall up on reboot"
+    command: systemctl enable firewalld
+
+  - name: "Add the Public Firewall rule for port 80"
+    command: firewall-cmd --permanent --zone=public --add-port=80/tcp
+
+  - name: Install httpd server'
+    yum:
+      name: httpd
+      state: present
+  
+
+  - name: "Install MariaDB - MySQL Stuff"
+    yum:
+      name: mariadb-server
+      state: present
+  - name: "Start MariaDB Services"
+    service:
+      name: mariadb
+      state: started
+
+  - name: "Ensure MariaDB up on Reboot"
+    command: systemctl enable mariadb
+
+  - name: "Add Public Firewall rule to access MariaDB"
+    command: firewall-cmd --permanent --zone=public --add-port=3306/tcp
+
+  - name: "Restart The Firewall Service"
+    command: firewall-cmd --reload
+  
+
+  - name: Install all Dependencies
+    yum:
+      name: 
+      - MySQL-python
+      - git 
+      state: present 
+
+
+  - name: Create ECOMDB Database
+    mysql_db:
+      name: ecomdb  
+      state: present
+
+  - name: Create the MySQL user
+    mysql_user:
+      name: ecomuser
+      password: ecompassword
+      priv: '*.*:ALL'
+      state: present
+
+  - name: Create the empty DB script file
+    file:
+      path: /home/pranav/db-load-script.sql
+      state: touch
+    become: yes
+
+  - name: Populate the DB file  
+    blockinfile: 
+      path: /home/pranav/db-load-script.sql
+      block: | 
+        USE ecomdb;
+        CREATE TABLE products (id mediumint(8) unsigned NOT NULL auto_increment,Name varchar(255) default NULL,Price varchar(255) default NULL, ImageUrl varchar(255) default NULL,PRIMARY KEY (id)) AUTO_INCREMENT=1;
+
+        INSERT INTO products (Name,Price,ImageUrl) VALUES ("Laptop","100","c-1.png"),("Drone","200","c-2.png"),("VR","300","c-3.png"),("Tablet","50","c-5.png"),("Watch","90","c-6.png"),("Phone Covers","20","c-7.png"),("Phone","80","c-8.png"),("Laptop","150","c-4.png");
+  
+  - name: Import the .sql script file
+    mysql_db:
+      state: import  
+      name: all 
+      target: /home/pranav/db-load-script.sql
+  
+  - name: Install & Configure & configure the Web App - Install php & php-mysql
+    yum:
+      name: 
+      - php 
+      - php-mysql
+      state: present 
+
+  - name: Modify the httpd conf to have the index.php file instead 
+    ansible.builtin.replace: 
+      path: /etc/httpd/conf/httpd.conf
+      regexp: 'index.html'
+      replace: 'index.php'
+
+  - name: Download the Webapp code from Github 
+    ansible.builtin.git:
+      repo: https://github.com/kodekloudhub/learning-app-ecommerce.git
+      dest: /var/www/html
+      clone: yes
+
+  - name: Modify the index.php file with correct DB Server Host  
+    ansible.builtin.replace:
+      path: /var/www/html/index.php
+      regexp: '172.20.1.101'
+      replace: 'localhost'
+
+  - name: Start the WebServer
+    service: 
+      name: httpd
+      state: started
+  - name: Ensure httpd server up on reboot
+    command: systemctl enable httpd 
+
